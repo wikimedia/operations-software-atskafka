@@ -1,0 +1,7 @@
+Produce to topic ema_test_ats on kafka-jumbo1001.eqiad.wmnet:
+
+   sudo ./atskafka -kafkaServer kafka-jumbo1001.eqiad.wmnet:9092 -kafkaTopic ema_test_ats -socket /srv/trafficserver/tls/var/run/analytics.sock
+
+Read what is being written with kafkacat:
+
+   kafkacat -C -b kafka-jumbo1001.eqiad.wmnet:9092 -t ema_test_ats

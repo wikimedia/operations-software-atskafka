@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"flag"
 	"log"
 	"net"
@@ -12,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/qri-io/jsonschema"
-	"github.com/segmentio/kafka-go"
+	"gopkg.in/confluentinc/confluent-kafka-go.v0/kafka"
 )
 
 var (
@@ -45,7 +44,7 @@ func reader(c chan string) error {
 	return nil
 }
 
-func doWork(c chan string, i int, s *jsonschema.RootSchema, p *kafka.Conn) {
+func doWork(c chan string, i int, s *jsonschema.RootSchema, p *kafka.Producer) {
 	log.Println("Worker", i, "started")
 
 	// List of fields not to be considered strings (eg: response_size)
@@ -59,10 +58,26 @@ func doWork(c chan string, i int, s *jsonschema.RootSchema, p *kafka.Conn) {
 		msgString := logLineToJson(line, numericFields)
 
 		if validJSON(msgString, s) {
-			p.WriteMessages(kafka.Message{Value: []byte(msgString)})
+			p.Produce(&kafka.Message{
+				TopicPartition: kafka.TopicPartition{Topic: kafkaTopicFlag, Partition: kafka.PartitionAny},
+				Value:          []byte(msgString),
+			}, nil)
 		} else {
 			log.Println("invalid JSON", msgString)
 			log.Println("original", line)
+		}
+	}
+}
+
+// Delivery report handler for produced messages
+func deliveryReport(p *kafka.Producer) {
+	for e := range p.Events() {
+		switch ev := e.(type) {
+		case *kafka.Message:
+			if ev.TopicPartition.Error != nil {
+				// TODO: proper handling of delivery error
+				log.Printf("Delivery failed: %v\n", ev.TopicPartition)
+			}
 		}
 	}
 }
@@ -73,17 +88,19 @@ func main() {
 	c := make(chan string)
 	s := loadSchema()
 
-	p, err := kafka.DialLeader(context.Background(), "tcp", *kafkaServerFlag, *kafkaTopicFlag, 0)
+	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": *kafkaServerFlag})
 	if err != nil {
 		log.Fatal("Fatal error: ", err)
 	}
+	defer p.Close()
+
+	go deliveryReport(p)
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, os.Interrupt)
 	go func() {
 		for sig := range sc {
 			log.Printf("captured %v, exiting..", sig)
-			p.Close()
 			os.Exit(0)
 		}
 	}()
