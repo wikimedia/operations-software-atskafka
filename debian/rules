@@ -8,6 +8,7 @@ PKGDIR = $(CURDIR)/debian/atskafka
 
 %:
 	dh $@
+	GOPATH=/tmp/ GOCACHE=/tmp/ go test
 
 override_dh_auto_build:
 
