@@ -15,11 +15,13 @@ import (
 )
 
 var (
-	socketPathFlag    = flag.String("socket", "/var/run/log.socket", "socket to communicate with fifo-log-demux")
-	schemaPathFlag    = flag.String("schema", "", "JSON schema for extended validation")
-	numericFieldsFlag = flag.String("numericFields", "time_firstbyte,response_size", "List of fields to be considered numeric")
-	kafkaServerFlag   = flag.String("kafkaServer", "localhost:9092", "Kafka server")
-	kafkaTopicFlag    = flag.String("kafkaTopic", "test_topic", "Kafka topic")
+	socketPathFlag     = flag.String("socket", "/var/run/log.socket", "socket to communicate with fifo-log-demux")
+	schemaPathFlag     = flag.String("schema", "", "JSON schema for extended validation")
+	numericFieldsFlag  = flag.String("numericFields", "time_firstbyte,response_size", "List of fields to be considered numeric")
+	kafkaServerFlag    = flag.String("kafkaServer", "localhost:9092", "Kafka server")
+	kafkaTopicFlag     = flag.String("kafkaTopic", "test_topic", "Kafka topic")
+	kafkaStatsInterval = flag.Int("kafkaStatsInterval", 60000, "Interval for Kafka statistics gathering in milliseconds")
+	kafkaStatsFile     = flag.String("kafkaStatsFile", "/tmp/atskafka.stats.json", "File for Kafka JSON statistics")
 )
 
 func reader(c chan string) error {
@@ -69,13 +71,17 @@ func doWork(c chan string, i int, s *jsonschema.RootSchema, p *kafka.Producer) {
 }
 
 // Delivery report handler for produced messages
-func deliveryReport(p *kafka.Producer) {
+func deliveryReport(p *kafka.Producer, stats *os.File) {
 	for e := range p.Events() {
 		switch ev := e.(type) {
 		case *kafka.Message:
 			if ev.TopicPartition.Error != nil {
 				// TODO: proper handling of delivery error
 				log.Printf("Delivery failed: %v\n", ev.TopicPartition)
+			}
+		case *kafka.Stats:
+			if _, err := stats.Write([]byte(e.String())); err != nil {
+				log.Printf("Error writing stats: %v\n", err)
 			}
 		}
 	}
@@ -87,13 +93,23 @@ func main() {
 	c := make(chan string)
 	s := loadSchema()
 
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": *kafkaServerFlag})
+	p, err := kafka.NewProducer(&kafka.ConfigMap{
+		"bootstrap.servers":      *kafkaServerFlag,
+		"client.id":              "atskafka",
+		"statistics.interval.ms": *kafkaStatsInterval,
+	})
 	if err != nil {
 		log.Fatal("Fatal error: ", err)
 	}
 	defer p.Close()
 
-	go deliveryReport(p)
+	stats, err := os.OpenFile(*kafkaStatsFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stats.Close()
+
+	go deliveryReport(p, stats)
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, os.Interrupt)
