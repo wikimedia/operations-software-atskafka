@@ -55,16 +55,15 @@ func doWork(c chan string, i int, s *jsonschema.RootSchema, p *kafka.Producer) {
 
 	for {
 		line := <-c
-		msgString := logLineToJson(line, numericFields)
 
-		if validJSON(msgString, s) {
+		json, err := logLineToJson(line, numericFields)
+		if err == nil {
 			p.Produce(&kafka.Message{
 				TopicPartition: kafka.TopicPartition{Topic: kafkaTopicFlag, Partition: kafka.PartitionAny},
-				Value:          []byte(msgString),
+				Value:          json,
 			}, nil)
 		} else {
-			log.Println("invalid JSON", msgString)
-			log.Println("original", line)
+			log.Printf("Error converting %v to JSON: %v\n", line, err)
 		}
 	}
 }

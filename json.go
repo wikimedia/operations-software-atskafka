@@ -31,24 +31,8 @@ func loadSchema() *jsonschema.RootSchema {
 	return s
 }
 
-func validJSON(str string, schema *jsonschema.RootSchema) bool {
-	// Simple check for JSON validity
-	if schema == nil {
-		var js json.RawMessage
-		return json.Unmarshal([]byte(str), &js) == nil
-	}
-
-	// Full schema validation
-	errors, err := schema.ValidateBytes([]byte(str))
-	if err != nil {
-		return false
-	}
-	return len(errors) == 0
-}
-
-func logLineToJson(line string, numericFields map[string]bool) string {
-	var msg strings.Builder
-	msg.WriteString("{")
+func logLineToJson(line string, numericFields map[string]bool) ([]byte, error) {
+	data := map[string]interface{}{}
 
 	fields := strings.Split(line, "\t")
 
@@ -57,22 +41,22 @@ func logLineToJson(line string, numericFields map[string]bool) string {
 		key := values[0]
 		value := values[1]
 
-		msg.WriteRune('"')
-		msg.WriteString(key)
-		msg.WriteString("\": ")
-
 		if !numericFields[key] {
-			msg.WriteString(strconv.Quote(value))
+			data[key] = value
 		} else {
-			msg.WriteString(value)
-		}
-
-		if i == len(fields)-1 {
-			msg.WriteRune('}')
-		} else {
-			msg.WriteString(", ")
+			num, err := strconv.Atoi(value)
+			if err != nil {
+				return nil, err
+			} else {
+				data[key] = num
+			}
 		}
 	}
 
-	return msg.String()
+	j, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return j, nil
 }
