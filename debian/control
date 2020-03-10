@@ -1,0 +1,16 @@
+Source: atskafka
+Section: web
+Priority: optional
+Maintainer: Emanuele Rocca <ema@wikimedia.org>
+Uploaders: Valentin Gutierrez <vgutierrez@wikimedia.org>
+Build-Depends: debhelper (>= 10), golang-go, ca-certificates, pkg-config, git, librdkafka-dev (>= 0.11.6)
+Standards-Version: 4.2.1
+
+Package: atskafka
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Traffic Server to Kafka log streamer
+ Read request logs from a UNIX domain socket, convert them to JSON, and send
+ the data to Kafka brokers.
+ .
+ See https://github.com/wikimedia/operations-software-fifo-log-demux
