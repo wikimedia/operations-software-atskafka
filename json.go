@@ -2,34 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
-	"log"
 	"strconv"
 	"strings"
-
-	"github.com/qri-io/jsonschema"
 )
-
-func loadSchema() *jsonschema.RootSchema {
-	var s *jsonschema.RootSchema
-
-	if *schemaPathFlag == "" {
-		log.Println("No JSON schema provided, will perform simple validation")
-		return nil
-	}
-
-	s = &jsonschema.RootSchema{}
-	schemaData, err := ioutil.ReadFile(*schemaPathFlag)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := json.Unmarshal(schemaData, s); err != nil {
-		log.Fatal(err)
-	}
-
-	return s
-}
 
 func logLineToJson(line string, numericFields map[string]bool) ([]byte, error) {
 	data := map[string]interface{}{}

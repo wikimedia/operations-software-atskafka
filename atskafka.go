@@ -10,13 +10,11 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/qri-io/jsonschema"
-	"gopkg.in/confluentinc/confluent-kafka-go.v0/kafka"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 var (
 	socketPathFlag     = flag.String("socket", "/var/run/log.socket", "socket to communicate with fifo-log-demux")
-	schemaPathFlag     = flag.String("schema", "", "JSON schema for extended validation")
 	numericFieldsFlag  = flag.String("numericFields", "time_firstbyte,response_size", "List of fields to be considered numeric")
 	kafkaServerFlag    = flag.String("kafkaServer", "localhost:9092", "Kafka server")
 	kafkaTopicFlag     = flag.String("kafkaTopic", "test_topic", "Kafka topic")
@@ -46,7 +44,7 @@ func reader(c chan string) error {
 	return nil
 }
 
-func doWork(c chan string, i int, s *jsonschema.RootSchema, p *kafka.Producer) {
+func doWork(c chan string, i int, p *kafka.Producer) {
 	log.Println("Worker", i, "started")
 
 	// List of fields not to be considered strings (eg: response_size)
@@ -91,7 +89,6 @@ func main() {
 	flag.Parse()
 
 	c := make(chan string)
-	s := loadSchema()
 
 	p, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers":      *kafkaServerFlag,
@@ -121,7 +118,7 @@ func main() {
 	}()
 
 	for i := 0; i < runtime.NumCPU(); i++ {
-		go doWork(c, i, s, p)
+		go doWork(c, i, p)
 	}
 
 	for {

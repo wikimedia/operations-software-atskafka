@@ -8,7 +8,6 @@ PKGDIR = $(CURDIR)/debian/atskafka
 
 %:
 	dh $@
-	GOPATH=/tmp/ GOCACHE=/tmp/ go test
 
 override_dh_auto_build:
 
@@ -17,5 +16,6 @@ override_dh_strip:
 
 override_dh_install:
 	install -d -m 755 -o root -g root $(PKGDIR)/usr/bin
-	GOPATH=/tmp/ GOCACHE=/tmp/ go build -o $(PKGDIR)/usr/bin/atskafka
+	GOPATH=/usr/share/gocode GOCACHE=/tmp/ go test
+	GOPATH=/usr/share/gocode GOCACHE=/tmp/ go build -o $(PKGDIR)/usr/bin/atskafka
 	chown root:root $(PKGDIR)/usr/bin/atskafka
