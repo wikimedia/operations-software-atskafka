@@ -1,3 +1,9 @@
+atskafka (0.3) buster-wikimedia; urgency=medium
+
+  * Convert float64 values to int when loading rdkafka configuration
+
+ -- Emanuele Rocca <ema@wikimedia.org>  Tue, 17 Mar 2020 18:01:23 +0100
+
 atskafka (0.2) buster-wikimedia; urgency=medium
 
   * Load rdkafka configuration from file

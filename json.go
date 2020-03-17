@@ -52,5 +52,14 @@ func loadConfig(f string) *kafka.ConfigMap {
 		log.Fatal(err)
 	}
 
+	// Convert float64 values to int. When unmarshaling into an interface
+	// value, json.Unmarshal uses float64 for numbers, while kafka.ConfigMap
+	// expects integers.
+	for k := range vals {
+		if _, ok := vals[k].(float64); ok {
+			vals[k] = int(vals[k].(float64))
+		}
+	}
+
 	return &vals
 }

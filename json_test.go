@@ -53,4 +53,14 @@ func TestLoadConfig(t *testing.T) {
 	if value != "atskafka" {
 		t.Errorf("Expecting client.id to be atskafka, got %v instead", value)
 	}
+
+	value, err = conf.Get("statistics.interval.ms", 0)
+
+	if err != nil {
+		t.Errorf("Expecting err to be nil, got %v instead", err)
+	}
+
+	if value != 60000 {
+		t.Errorf("Expecting statistics.interval.ms to be 60000, got %v instead", value)
+	}
 }
