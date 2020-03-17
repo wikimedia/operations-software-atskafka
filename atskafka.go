@@ -14,12 +14,11 @@ import (
 )
 
 var (
-	socketPathFlag     = flag.String("socket", "/var/run/log.socket", "socket to communicate with fifo-log-demux")
-	numericFieldsFlag  = flag.String("numericFields", "time_firstbyte,response_size", "List of fields to be considered numeric")
-	kafkaServerFlag    = flag.String("kafkaServer", "localhost:9092", "Kafka server")
-	kafkaTopicFlag     = flag.String("kafkaTopic", "test_topic", "Kafka topic")
-	kafkaStatsInterval = flag.Int("kafkaStatsInterval", 60000, "Interval for Kafka statistics gathering in milliseconds")
-	kafkaStatsFile     = flag.String("kafkaStatsFile", "/tmp/atskafka.stats.json", "File for Kafka JSON statistics")
+	socketPathFlag    = flag.String("socket", "/var/run/log.socket", "socket to communicate with fifo-log-demux")
+	numericFieldsFlag = flag.String("numericFields", "time_firstbyte,response_size", "List of fields to be considered numeric")
+	kafkaConfigFile   = flag.String("kafkaConfig", "/etc/atskafka.conf", "Kafka configuration file")
+	kafkaTopicFlag    = flag.String("kafkaTopic", "test_topic", "Kafka topic")
+	kafkaStatsFile    = flag.String("kafkaStatsFile", "/tmp/atskafka.stats.json", "File for Kafka JSON statistics")
 )
 
 func reader(c chan string) error {
@@ -90,11 +89,8 @@ func main() {
 
 	c := make(chan string)
 
-	p, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers":      *kafkaServerFlag,
-		"client.id":              "atskafka",
-		"statistics.interval.ms": *kafkaStatsInterval,
-	})
+	p, err := kafka.NewProducer(loadConfig(*kafkaConfigFile))
+
 	if err != nil {
 		log.Fatal("Fatal error: ", err)
 	}

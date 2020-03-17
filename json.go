@@ -2,8 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"log"
 	"strconv"
 	"strings"
+
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 func logLineToJson(line string, numericFields map[string]bool) ([]byte, error) {
@@ -34,4 +38,19 @@ func logLineToJson(line string, numericFields map[string]bool) ([]byte, error) {
 	}
 
 	return j, nil
+}
+
+func loadConfig(f string) *kafka.ConfigMap {
+	var vals kafka.ConfigMap
+	jsonConfig, err := ioutil.ReadFile(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = json.Unmarshal(jsonConfig, &vals)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return &vals
 }

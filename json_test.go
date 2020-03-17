@@ -41,3 +41,16 @@ func BenchmarkLogLineToJson(b *testing.B) {
 		logLineToJson(l, m)
 	}
 }
+
+func TestLoadConfig(t *testing.T) {
+	conf := loadConfig("testdata/atskafka.conf")
+	value, err := conf.Get("client.id", "")
+
+	if err != nil {
+		t.Errorf("Expecting err to be nil, got %v instead", err)
+	}
+
+	if value != "atskafka" {
+		t.Errorf("Expecting client.id to be atskafka, got %v instead", value)
+	}
+}
