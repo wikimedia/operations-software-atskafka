@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -15,7 +16,7 @@ import (
 
 var (
 	socketPathFlag    = flag.String("socket", "/var/run/log.socket", "socket to communicate with fifo-log-demux")
-	numericFieldsFlag = flag.String("numericFields", "time_firstbyte,response_size", "List of fields to be considered numeric")
+	numericFieldsFlag = flag.String("numericFields", "response_size,sequence,time_firstbyte", "List of fields to be considered numeric")
 	kafkaConfigFile   = flag.String("kafkaConfig", "/etc/atskafka.conf", "Kafka configuration file")
 	kafkaTopicFlag    = flag.String("kafkaTopic", "test_topic", "Kafka topic")
 	kafkaStatsFile    = flag.String("kafkaStatsFile", "/tmp/atskafka.stats.json", "File for Kafka JSON statistics")
@@ -37,8 +38,10 @@ func reader(c chan string) error {
 
 	// Read lines from socket
 	scanner := bufio.NewScanner(conn)
+	seq := 0
 	for scanner.Scan() {
-		c <- scanner.Text()
+		c <- fmt.Sprintf("sequence:%d\t%s", seq, scanner.Text())
+		seq++
 	}
 	return nil
 }
