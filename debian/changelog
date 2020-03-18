@@ -1,6 +1,7 @@
 atskafka (0.4) buster-wikimedia; urgency=medium
 
   * Add sequence number
+  * Do not append to stats file
 
  -- Emanuele Rocca <ema@wikimedia.org>  Wed, 18 Mar 2020 16:28:43 +0100
 

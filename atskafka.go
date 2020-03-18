@@ -71,7 +71,7 @@ func doWork(c chan string, i int, p *kafka.Producer) {
 }
 
 // Delivery report handler for produced messages
-func deliveryReport(p *kafka.Producer, stats *os.File) {
+func deliveryReport(p *kafka.Producer) {
 	for e := range p.Events() {
 		switch ev := e.(type) {
 		case *kafka.Message:
@@ -80,6 +80,12 @@ func deliveryReport(p *kafka.Producer, stats *os.File) {
 				log.Printf("Delivery failed: %v\n", ev.TopicPartition)
 			}
 		case *kafka.Stats:
+			stats, err := os.OpenFile(*kafkaStatsFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer stats.Close()
+
 			if _, err := stats.Write([]byte(e.String())); err != nil {
 				log.Printf("Error writing stats: %v\n", err)
 			}
@@ -99,13 +105,7 @@ func main() {
 	}
 	defer p.Close()
 
-	stats, err := os.OpenFile(*kafkaStatsFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer stats.Close()
-
-	go deliveryReport(p, stats)
+	go deliveryReport(p)
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, os.Interrupt)
