@@ -1,3 +1,9 @@
+atskafka (0.5) buster-wikimedia; urgency=medium
+
+  * Reconnect to Unix socket in case of read errors
+
+ -- Emanuele Rocca <ema@wikimedia.org>  Mon, 23 Mar 2020 10:01:37 +0100
+
 atskafka (0.4) buster-wikimedia; urgency=medium
 
   * Add sequence number

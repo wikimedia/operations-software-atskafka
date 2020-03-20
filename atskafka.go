@@ -5,16 +5,24 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"net"
 	"os"
 	"os/signal"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
+const (
+	connectTimeout     = 1000 * time.Millisecond
+	maxConnectAttempts = 16
+)
+
 var (
+	connectAttempt    = 0
 	socketPathFlag    = flag.String("socket", "/var/run/log.socket", "socket to communicate with fifo-log-demux")
 	numericFieldsFlag = flag.String("numericFields", "response_size,sequence,time_firstbyte", "List of fields to be considered numeric")
 	kafkaConfigFile   = flag.String("kafkaConfig", "/etc/atskafka.conf", "Kafka configuration file")
@@ -24,7 +32,7 @@ var (
 
 func reader(c chan string) error {
 	// Connect to fifo-log-demux socket
-	conn, err := net.Dial("unix", *socketPathFlag)
+	conn, err := net.DialTimeout("unix", *socketPathFlag, connectTimeout)
 	if err != nil {
 		return err
 	}
@@ -35,6 +43,9 @@ func reader(c chan string) error {
 	if err != nil {
 		return err
 	}
+
+	log.Println("Connected to", *socketPathFlag)
+	connectAttempt = 0
 
 	// Read lines from socket
 	scanner := bufio.NewScanner(conn)
@@ -120,13 +131,15 @@ func main() {
 		go doWork(c, i, p)
 	}
 
-	for {
-		// By keeping this in an infinite loop fifo-log-tailer is able to re-open
-		// the UNIX socket after an error
+	for connectAttempt = 0; connectAttempt < maxConnectAttempts; connectAttempt++ {
+		// By keeping this in a loop, atskafka is able to re-open the UNIX
+		// socket after an error
 		err := reader(c)
-		if err != nil {
-			log.Println("Unable to read from socket: {}", err)
-			break
-		}
+
+		connectRetryTime := math.Pow(2, float64(connectAttempt))
+		log.Printf("Unable to read from socket: %v. Reconnecting in %v milliseconds.\n", err, connectRetryTime)
+		time.Sleep(time.Duration(connectRetryTime) * time.Millisecond)
 	}
+
+	log.Fatal("Giving up trying to connect to", *socketPathFlag)
 }
