@@ -16,6 +16,10 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
+type KafkaProducer interface {
+	Produce(msg *kafka.Message, deliveryChan chan kafka.Event) error
+}
+
 const (
 	connectTimeout     = 1000 * time.Millisecond
 	maxConnectAttempts = 16
@@ -57,7 +61,7 @@ func reader(c chan string) error {
 	return nil
 }
 
-func doWork(c chan string, i int, p *kafka.Producer) {
+func doWork(c chan string, i int, p KafkaProducer) {
 	log.Println("Worker", i, "started")
 
 	// List of fields not to be considered strings (eg: response_size)

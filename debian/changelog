@@ -2,6 +2,7 @@ atskafka (0.6) UNRELEASED; urgency=medium
 
   * json: avoid 'index out of range' panic on malformed fields:
     https://phabricator.wikimedia.org/P11114
+  * Add tests for atskafka.go
 
  -- Emanuele Rocca <ema@wikimedia.org>  Sat, 02 May 2020 12:51:05 +0200
 
