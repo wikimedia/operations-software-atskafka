@@ -1,3 +1,10 @@
+atskafka (0.6) UNRELEASED; urgency=medium
+
+  * json: avoid 'index out of range' panic on malformed fields:
+    https://phabricator.wikimedia.org/P11114
+
+ -- Emanuele Rocca <ema@wikimedia.org>  Sat, 02 May 2020 12:51:05 +0200
+
 atskafka (0.5) buster-wikimedia; urgency=medium
 
   * Reconnect to Unix socket in case of read errors

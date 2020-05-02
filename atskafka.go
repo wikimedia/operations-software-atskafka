@@ -76,7 +76,7 @@ func doWork(c chan string, i int, p *kafka.Producer) {
 				Value:          json,
 			}, nil)
 		} else {
-			log.Printf("Error converting %v to JSON: %v\n", line, err)
+			log.Printf("Error converting '%v' to JSON: %v\n", line, err)
 		}
 	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"strconv"
@@ -17,6 +18,10 @@ func logLineToJson(line string, numericFields map[string]bool) ([]byte, error) {
 
 	for i := 0; i < len(fields); i++ {
 		values := strings.SplitN(fields[i], ":", 2)
+		if len(values) != 2 {
+			return nil, fmt.Errorf("Cannot split '%s' into 'field:value'", fields[i])
+		}
+
 		key := values[0]
 		value := values[1]
 
