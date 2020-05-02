@@ -7,6 +7,8 @@ import (
 	"log"
 	"math"
 	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime"
@@ -32,6 +34,7 @@ var (
 	kafkaConfigFile   = flag.String("kafkaConfig", "/etc/atskafka.conf", "Kafka configuration file")
 	kafkaTopicFlag    = flag.String("kafkaTopic", "test_topic", "Kafka topic")
 	kafkaStatsFile    = flag.String("kafkaStatsFile", "/tmp/atskafka.stats.json", "File for Kafka JSON statistics")
+	pprofAddr         = flag.String("profileAddr", ":2113", "TCP network address for pprof endpoint")
 )
 
 func reader(c chan string) error {
@@ -110,6 +113,10 @@ func deliveryReport(p *kafka.Producer) {
 
 func main() {
 	flag.Parse()
+	// Serve profiling info under /debug/pprof
+	go func() {
+		http.ListenAndServe(*pprofAddr, nil)
+	}()
 
 	c := make(chan string)
 
