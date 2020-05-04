@@ -51,6 +51,7 @@ var (
 	kafkaTopicFlag    = flag.String("kafkaTopic", "test_topic", "Kafka topic")
 	kafkaStatsFile    = flag.String("kafkaStatsFile", "/tmp/atskafka.stats.json", "File for Kafka JSON statistics")
 	pprofAddr         = flag.String("profileAddr", ":2113", "TCP network address for pprof endpoint")
+	validLogsRegex    = flag.String("validLogsRegex", "http_status:[1-9]", "Regular expression to match logs against")
 )
 
 func reader(c chan string) error {
@@ -61,8 +62,8 @@ func reader(c chan string) error {
 	}
 	defer conn.Close()
 
-	// Send empty regexp to fifo-log-demux
-	_, err = conn.Write([]byte(" "))
+	// Send fifo-log-demux a regular expression to filter valid logs
+	_, err = conn.Write([]byte(*validLogsRegex))
 	if err != nil {
 		return err
 	}
