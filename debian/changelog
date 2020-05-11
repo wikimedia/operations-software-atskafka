@@ -1,12 +1,12 @@
-atskafka (0.6) UNRELEASED; urgency=medium
+atskafka (0.6) buster-wikimedia; urgency=medium
 
-  * json: avoid 'index out of range' panic on malformed fields:
+  * json: fix 'index out of range' panic on malformed fields:
     https://phabricator.wikimedia.org/P11114
   * Add tests for atskafka.go
   * Add pprof
   * Filter logs by regular expression
 
- -- Emanuele Rocca <ema@wikimedia.org>  Sat, 02 May 2020 12:51:05 +0200
+ -- Emanuele Rocca <ema@wikimedia.org>  Mon, 11 May 2020 10:05:18 +0200
 
 atskafka (0.5) buster-wikimedia; urgency=medium
 
