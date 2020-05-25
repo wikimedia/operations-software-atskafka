@@ -1,3 +1,10 @@
+atskafka (0.7) buster-wikimedia; urgency=medium
+
+  * Use prometheus-rdkafka-exporter to make kafka metrics available to
+    prometheus. (Bug: T253197, T253551)
+
+ -- Emanuele Rocca <ema@wikimedia.org>  Mon, 25 May 2020 13:24:26 +0200
+
 atskafka (0.6) buster-wikimedia; urgency=medium
 
   * json: fix 'index out of range' panic on malformed fields:

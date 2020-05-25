@@ -31,7 +31,9 @@ import (
 	"strings"
 	"time"
 
+	"gerrit.wikimedia.org/r/operations/software/prometheus-rdkafka-exporter/promrdkafka"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type KafkaProducer interface {
@@ -49,8 +51,7 @@ var (
 	numericFieldsFlag = flag.String("numericFields", "response_size,sequence,time_firstbyte", "List of fields to be considered numeric")
 	kafkaConfigFile   = flag.String("kafkaConfig", "/etc/atskafka.conf", "Kafka configuration file")
 	kafkaTopicFlag    = flag.String("kafkaTopic", "test_topic", "Kafka topic")
-	kafkaStatsFile    = flag.String("kafkaStatsFile", "/tmp/atskafka.stats.json", "File for Kafka JSON statistics")
-	pprofAddr         = flag.String("profileAddr", ":2113", "TCP network address for pprof endpoint")
+	addr              = flag.String("addr", ":2113", "TCP network address for Prometheus and pprof endpoints")
 	validLogsRegex    = flag.String("validLogsRegex", "http_status:[1-9]", "Regular expression to match logs against")
 )
 
@@ -106,7 +107,7 @@ func doWork(c chan string, i int, p KafkaProducer) {
 }
 
 // Delivery report handler for produced messages
-func deliveryReport(p *kafka.Producer) {
+func deliveryReport(p *kafka.Producer, m *promrdkafka.Metrics) {
 	for e := range p.Events() {
 		switch ev := e.(type) {
 		case *kafka.Message:
@@ -115,14 +116,9 @@ func deliveryReport(p *kafka.Producer) {
 				log.Printf("Delivery failed: %v\n", ev.TopicPartition)
 			}
 		case *kafka.Stats:
-			stats, err := os.OpenFile(*kafkaStatsFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+			err := m.Update(e.String())
 			if err != nil {
-				log.Fatal(err)
-			}
-			defer stats.Close()
-
-			if _, err := stats.Write([]byte(e.String())); err != nil {
-				log.Printf("Error writing stats: %v\n", err)
+				log.Printf("Error updating stats: %v\n", err)
 			}
 		}
 	}
@@ -130,11 +126,6 @@ func deliveryReport(p *kafka.Producer) {
 
 func main() {
 	flag.Parse()
-	// Serve profiling info under /debug/pprof
-	go func() {
-		http.ListenAndServe(*pprofAddr, nil)
-	}()
-
 	c := make(chan string)
 
 	p, err := kafka.NewProducer(loadConfig(*kafkaConfigFile))
@@ -144,8 +135,6 @@ func main() {
 	}
 	defer p.Close()
 
-	go deliveryReport(p)
-
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, os.Interrupt)
 	go func() {
@@ -153,6 +142,15 @@ func main() {
 			log.Printf("captured %v, exiting..", sig)
 			os.Exit(0)
 		}
+	}()
+
+	m := promrdkafka.NewMetrics()
+	go deliveryReport(p, m)
+
+	// Serve metrics under /metrics, profiling info under /debug/pprof
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(*addr, nil)
 	}()
 
 	for i := 0; i < runtime.NumCPU(); i++ {
@@ -169,5 +167,5 @@ func main() {
 		time.Sleep(time.Duration(connectRetryTime) * time.Millisecond)
 	}
 
-	log.Fatal("Giving up trying to connect to", *socketPathFlag)
+	log.Fatal("Giving up trying to connect to ", *socketPathFlag)
 }
