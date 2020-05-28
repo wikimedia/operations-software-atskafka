@@ -1,3 +1,11 @@
+atskafka (0.9) buster-wikimedia; urgency=medium
+
+  * Build against prometheus-rdkafka-exporter 0.2. (Bug: T253551)
+  * Drop atskafka_requests_total, no difference with atskafka_seq_number.
+  * Do not log pointless messages about workers being started.
+
+ -- Emanuele Rocca <ema@wikimedia.org>  Fri, 29 May 2020 10:56:18 +0000
+
 atskafka (0.8) buster-wikimedia; urgency=medium
 
   * Add new prometheus metrics: atskafka_requests_total,

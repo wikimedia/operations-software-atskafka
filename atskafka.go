@@ -55,12 +55,7 @@ var (
 	kafkaTopicFlag    = flag.String("kafkaTopic", "test_topic", "Kafka topic")
 	addr              = flag.String("addr", ":2113", "TCP network address for Prometheus and pprof endpoints")
 	validLogsRegex    = flag.String("validLogsRegex", "http_status:[1-9]", "Regular expression to match logs against")
-	msgCounter        = promauto.NewCounter(
-		prometheus.CounterOpts{
-			Name: "atskafka_requests_total",
-			Help: "Total number of requests processed",
-		})
-	deliveryErrors = promauto.NewCounter(
+	deliveryErrors    = promauto.NewCounter(
 		prometheus.CounterOpts{
 			Name: "atskafka_delivery_errors_total",
 			Help: "Total number of Kafka delivery errors",
@@ -95,16 +90,13 @@ func reader(c chan string) error {
 	for scanner.Scan() {
 		c <- fmt.Sprintf("sequence:%d\t%s", seq, scanner.Text())
 		seq++
-		// Update metrics: atskafka_requests_total and atskafka_seq_number
-		msgCounter.Inc()
+		// Update atskafka_seq_number
 		seqNumber.Set(float64(seq))
 	}
 	return nil
 }
 
 func doWork(c chan string, i int, p KafkaProducer) {
-	log.Println("Worker", i, "started")
-
 	// List of fields not to be considered strings (eg: response_size)
 	numericFields := make(map[string]bool)
 	for _, field := range strings.Split(*numericFieldsFlag, ",") {
