@@ -1,3 +1,10 @@
+atskafka (0.8) buster-wikimedia; urgency=medium
+
+  * Add new prometheus metrics: atskafka_requests_total,
+    atskafka_delivery_errors_total, atskafka_seq_number. (Bug: T253551)
+
+ -- Emanuele Rocca <ema@wikimedia.org>  Thu, 28 May 2020 14:55:51 +0200
+
 atskafka (0.7) buster-wikimedia; urgency=medium
 
   * Use prometheus-rdkafka-exporter to make kafka metrics available to

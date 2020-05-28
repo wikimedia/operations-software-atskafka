@@ -33,6 +33,8 @@ import (
 
 	"gerrit.wikimedia.org/r/operations/software/prometheus-rdkafka-exporter/promrdkafka"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -53,6 +55,21 @@ var (
 	kafkaTopicFlag    = flag.String("kafkaTopic", "test_topic", "Kafka topic")
 	addr              = flag.String("addr", ":2113", "TCP network address for Prometheus and pprof endpoints")
 	validLogsRegex    = flag.String("validLogsRegex", "http_status:[1-9]", "Regular expression to match logs against")
+	msgCounter        = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Name: "atskafka_requests_total",
+			Help: "Total number of requests processed",
+		})
+	deliveryErrors = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Name: "atskafka_delivery_errors_total",
+			Help: "Total number of Kafka delivery errors",
+		})
+	seqNumber = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "atskafka_seq_number",
+			Help: "Latest sequence number",
+		})
 )
 
 func reader(c chan string) error {
@@ -78,6 +95,9 @@ func reader(c chan string) error {
 	for scanner.Scan() {
 		c <- fmt.Sprintf("sequence:%d\t%s", seq, scanner.Text())
 		seq++
+		// Update metrics: atskafka_requests_total and atskafka_seq_number
+		msgCounter.Inc()
+		seqNumber.Set(float64(seq))
 	}
 	return nil
 }
@@ -112,8 +132,8 @@ func deliveryReport(p *kafka.Producer, m *promrdkafka.Metrics) {
 		switch ev := e.(type) {
 		case *kafka.Message:
 			if ev.TopicPartition.Error != nil {
-				// TODO: proper handling of delivery error
 				log.Printf("Delivery failed: %v\n", ev.TopicPartition)
+				deliveryErrors.Inc()
 			}
 		case *kafka.Stats:
 			err := m.Update(e.String())
