@@ -42,7 +42,26 @@ func logLineToJson(line string, numericFields map[string]bool) ([]byte, error) {
 		value := values[1]
 
 		if !numericFields[key] {
-			data[key] = value
+			if key == "uri_path" {
+				// Extract uri_query, if any. For instance, turn
+				// uri_path:/w/load.php?q=x into uri_path:/w/load.php and
+				// uri_query:q=x.
+				// Doing this out of the for loop might possibly look better
+				// but is a bit slower due to the required type assertion to
+				// convert from interface{}{} to string.
+				uriPathQuery := strings.SplitN(value, "?", 2)
+				data["uri_path"] = uriPathQuery[0]
+
+				if len(uriPathQuery) == 2 {
+					data["uri_query"] = uriPathQuery[1]
+				} else {
+					// varnishkafka defaults to empty string rather than null,
+					// keep the behavior here too
+					data["uri_query"] = ""
+				}
+			} else {
+				data[key] = value
+			}
 		} else {
 			num, err := strconv.Atoi(value)
 			if err != nil {

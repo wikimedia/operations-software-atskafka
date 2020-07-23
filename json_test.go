@@ -19,18 +19,22 @@ package main
 import "testing"
 
 func TestLogLineToJsonOK(t *testing.T) {
-	const l = "hostname:cp3050.esams.wmnet	time_firstbyte:1235	http_method:GET	uri_host:en.wikipedia.org"
-	const j = `{"hostname":"cp3050.esams.wmnet","http_method":"GET","time_firstbyte":1235,"uri_host":"en.wikipedia.org"}`
-
-	m := map[string]bool{"time_firstbyte": true}
-	r, err := logLineToJson(l, m)
-
-	if err != nil {
-		t.Errorf("Expecting err to be nil, got %v instead", err)
+	expected := map[string]string{
+		"hostname:cp3050.esams.wmnet	time_firstbyte:1235	http_method:GET	uri_host:en.wikipedia.org	uri_path:/w/load.php?lang=en&modules=jquery%2Coojs-ui-core%2Coojs-ui-widgets&skin=vector&version=1wn7i": `{"hostname":"cp3050.esams.wmnet","http_method":"GET","time_firstbyte":1235,"uri_host":"en.wikipedia.org","uri_path":"/w/load.php","uri_query":"lang=en\u0026modules=jquery%2Coojs-ui-core%2Coojs-ui-widgets\u0026skin=vector\u0026version=1wn7i"}`,
+		"hostname:cp3050.esams.wmnet	time_firstbyte:42	http_method:HEAD	uri_host:en.wikipedia.org	uri_path:/wiki/Main_Page": `{"hostname":"cp3050.esams.wmnet","http_method":"HEAD","time_firstbyte":42,"uri_host":"en.wikipedia.org","uri_path":"/wiki/Main_Page","uri_query":""}`,
 	}
 
-	if string(r) != j {
-		t.Errorf("Got r=%s instead of j=%s", r, j)
+	for l, j := range expected {
+		m := map[string]bool{"time_firstbyte": true}
+		r, err := logLineToJson(l, m)
+
+		if err != nil {
+			t.Errorf("Expecting err to be nil, got %v instead", err)
+		}
+
+		if string(r) != j {
+			t.Errorf("Got r=%s instead of j=%s", r, j)
+		}
 	}
 }
 
@@ -49,8 +53,17 @@ func TestLogLineToJsonKO(t *testing.T) {
 	}
 }
 
-func BenchmarkLogLineToJson(b *testing.B) {
-	const l = "hostname:cp3050.esams.wmnet	time_firstbyte:1235	http_method:GET	uri_host:en.wikipedia.org"
+func BenchmarkLogLineToJsonNoQuery(b *testing.B) {
+	const l = "hostname:cp3050.esams.wmnet	time_firstbyte:1235	http_method:GET	uri_host:en.wikipedia.org	uri_path:/wiki/Main_Page"
+	m := map[string]bool{"time_firstbyte": true}
+
+	for i := 0; i < b.N; i++ {
+		logLineToJson(l, m)
+	}
+}
+
+func BenchmarkLogLineToJsonYesQuery(b *testing.B) {
+	const l = "hostname:cp3050.esams.wmnet	time_firstbyte:1235	http_method:GET	uri_host:en.wikipedia.org	uri_path:/w/load.php?lang=en"
 	m := map[string]bool{"time_firstbyte": true}
 
 	for i := 0; i < b.N; i++ {
