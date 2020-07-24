@@ -16,25 +16,29 @@
 
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestLogLineToJsonOK(t *testing.T) {
-	expected := map[string]string{
-		"hostname:cp3050.esams.wmnet	time_firstbyte:1235	http_method:GET	uri_host:en.wikipedia.org	uri_path:/w/load.php?lang=en&modules=jquery%2Coojs-ui-core%2Coojs-ui-widgets&skin=vector&version=1wn7i": `{"hostname":"cp3050.esams.wmnet","http_method":"GET","time_firstbyte":1235,"uri_host":"en.wikipedia.org","uri_path":"/w/load.php","uri_query":"lang=en\u0026modules=jquery%2Coojs-ui-core%2Coojs-ui-widgets\u0026skin=vector\u0026version=1wn7i"}`,
-		"hostname:cp3050.esams.wmnet	time_firstbyte:42	http_method:HEAD	uri_host:en.wikipedia.org	uri_path:/wiki/Main_Page": `{"hostname":"cp3050.esams.wmnet","http_method":"HEAD","time_firstbyte":42,"uri_host":"en.wikipedia.org","uri_path":"/wiki/Main_Page","uri_query":""}`,
+	input := []string{
+		"hostname:cp3050.esams.wmnet	time_firstbyte:1235	http_method:GET	uri_host:en.wikipedia.org	uri_path:/w/load.php?lang=en&modules=jquery%2Coojs-ui-core%2Coojs-ui-widgets&skin=vector&version=1wn7i",
+		"hostname:cp3050.esams.wmnet	time_firstbyte:42	http_method:HEAD	uri_host:en.wikipedia.org	uri_path:/wiki/Main_Page",
 	}
 
-	for l, j := range expected {
+	expected := []string{
+		`{"hostname":"cp3050.esams.wmnet","http_method":"GET","time_firstbyte":1235,"uri_host":"en.wikipedia.org","uri_path":"/w/load.php","uri_query":"lang=en\u0026modules=jquery%2Coojs-ui-core%2Coojs-ui-widgets\u0026skin=vector\u0026version=1wn7i"}`,
+		`{"hostname":"cp3050.esams.wmnet","http_method":"HEAD","time_firstbyte":42,"uri_host":"en.wikipedia.org","uri_path":"/wiki/Main_Page","uri_query":""}`,
+	}
+
+	for i, val := range input {
 		m := map[string]bool{"time_firstbyte": true}
-		r, err := logLineToJson(l, m)
+		r, err := logLineToJson(val, m)
 
-		if err != nil {
-			t.Errorf("Expecting err to be nil, got %v instead", err)
-		}
-
-		if string(r) != j {
-			t.Errorf("Got r=%s instead of j=%s", r, j)
-		}
+		assert.EqualValues(t, expected[i], r, "JSON output mismatch")
+		assert.NoError(t, err)
 	}
 }
 
@@ -44,13 +48,8 @@ func TestLogLineToJsonKO(t *testing.T) {
 	m := map[string]bool{"time_firstbyte": true}
 	r, err := logLineToJson(l, m)
 
-	if err == nil {
-		t.Error("Expecting err to be set, got nil instead")
-	}
-
-	if r != nil {
-		t.Errorf("Expecting r to be nil, got %v instead", r)
-	}
+	assert.Nil(t, r)
+	assert.Error(t, err)
 }
 
 func BenchmarkLogLineToJsonNoQuery(b *testing.B) {
@@ -75,21 +74,11 @@ func TestLoadConfig(t *testing.T) {
 	conf := loadConfig("testdata/atskafka.conf")
 	value, err := conf.Get("client.id", "")
 
-	if err != nil {
-		t.Errorf("Expecting err to be nil, got %v instead", err)
-	}
-
-	if value != "atskafka" {
-		t.Errorf("Expecting client.id to be atskafka, got %v instead", value)
-	}
+	assert.Equal(t, value, "atskafka")
+	assert.Nil(t, err)
 
 	value, err = conf.Get("statistics.interval.ms", 0)
 
-	if err != nil {
-		t.Errorf("Expecting err to be nil, got %v instead", err)
-	}
-
-	if value != 60000 {
-		t.Errorf("Expecting statistics.interval.ms to be 60000, got %v instead", value)
-	}
+	assert.Equal(t, value, 60000)
+	assert.Nil(t, err)
 }

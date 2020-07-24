@@ -3,6 +3,7 @@ atskafka (0.10) UNRELEASED; urgency=medium
   * Add missing field: uri_query. (Bug: T254317)
   * Move to dh-golang
   * go mod configuration
+  * Use testify for testing
 
  -- Emanuele Rocca <ema@wikimedia.org>  Thu, 23 Jul 2020 16:01:18 +0200
 

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/stretchr/testify/assert"
 )
 
 type MockProducer struct {
@@ -45,9 +46,7 @@ func TestDoWork(t *testing.T) {
 
 	msg := <-p.outChan
 
-	if *msg.TopicPartition.Topic != "test_topic" {
-		t.Errorf("Unexpected topic: %s", *msg.TopicPartition.Topic)
-	}
+	assert.Equal(t, "test_topic", *msg.TopicPartition.Topic, "Unexpected topic")
 
 	type Data struct {
 		Hostname      string `json:"hostname"`
@@ -58,19 +57,9 @@ func TestDoWork(t *testing.T) {
 	var d Data
 
 	err := json.Unmarshal(msg.Value, &d)
-	if err != nil {
-		t.Errorf("Error Unmarshaling JSON")
-	}
+	assert.Nil(t, err)
 
-	if d.Hostname != "cp3050.esams.wmnet" {
-		t.Errorf("Unexpected value: %s", d.Hostname)
-	}
-
-	if d.TimeFirstbyte != 9 {
-		t.Errorf("Unexpected value: %d", d.TimeFirstbyte)
-	}
-
-	if d.CacheStatus != "hit-front" {
-		t.Errorf("Unexpected value: %s", d.CacheStatus)
-	}
+	assert.Equal(t, "cp3050.esams.wmnet", d.Hostname, "Unexpected hostname")
+	assert.Equal(t, 9, d.TimeFirstbyte, "Unexpected TTFB")
+	assert.Equal(t, "hit-front", d.CacheStatus, "Unexpected cache-status")
 }
