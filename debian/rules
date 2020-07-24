@@ -1,21 +1,9 @@
 #!/usr/bin/make -f
-# -*- makefile -*-
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
-
-PKGDIR = $(CURDIR)/debian/atskafka
+export DH_GOPKG = gerrit.wikimedia.org/r/operations/software/atskafka
+export DH_GOLANG_EXCLUDES := vendor/
+export DH_GOLANG_EXCLUDES_ALL := 1
+export DH_GOLANG_INSTALL_ALL := 1
 
 %:
-	dh $@
-
-override_dh_auto_build:
-
-override_dh_strip:
-	dh_strip --no-automatic-dbgsym
-
-override_dh_install:
-	install -d -m 755 -o root -g root $(PKGDIR)/usr/bin
-	GOPATH=/usr/share/gocode GOCACHE=/tmp/ go test
-	GOPATH=/usr/share/gocode GOCACHE=/tmp/ go build -o $(PKGDIR)/usr/bin/atskafka
-	chown root:root $(PKGDIR)/usr/bin/atskafka
+	dh $@ --buildsystem=golang --with=golang
